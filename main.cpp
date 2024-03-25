@@ -1,4 +1,5 @@
 #include <iostream>
+#include <deque>
 
 using namespace std;
 
@@ -36,26 +37,8 @@ public:
     }
 
     void print() { //this works, not sure how so don't touch it for now
-        cout << "This node has data ";
-        if (getData() == nullptr)
-            cout << "none ";
-        else
-            cout << data->getValue() << " and ";
-        if (getLeftChild() == nullptr)
-            cout << " no left child ";
-        else
-            cout << "left child " << getLeftChild()->getData()->getValue();
-        cout << " and ";
-        if (getRightChild() == nullptr)
-            cout << " no right child";
-        else
-            cout << "right child " << getRightChild()->getData()->getValue();
-        cout << " with parent ";
-        if (getParent() == nullptr)
-            cout << " none";
-        else
-            cout << getParent()->getData()->getValue();
-        cout << endl;
+        data->print();
+
     }
 
     T *getData() {
@@ -81,11 +64,14 @@ private:
     Node<T> *root;
     int numberOfElements;
     int height;
+    deque<Node<T> *> sortedList; //list to store sorted elements
+
 public:
     BinarySearchTree(T *r) {
         height = 0;
         numberOfElements = 1;
         root = new Node<T>(r);
+
     }
 
     ~BinarySearchTree() {
@@ -98,45 +84,41 @@ public:
     //elem should be a Data element, in this case (whatever the Node Class is using as its datatype)
     void insertElement(T *d) {
         Node<T> *elem = new Node<T>(d);
-        if (numberOfElements == 0)
+        if (numberOfElements == 0) //accounting for if the entire tree is deleted for some reason
             root = elem;
-        else{
+        else {
             elem->setParent(findParent(elem));
-            insertNonRoot(elem);
+            insertNonRoot(elem, elem->getParent());
         }
         numberOfElements++;
-        elem->print();
     }
 
-    bool insertNonRoot(Node<T> *elem) {
-
-        Node<T> *p = elem->getParent(); //shortcut to avoid long -> trails
-        if (elem->getData()->getValue() <= p->getData()->getValue()) { //if element's value is less than parent's value, insert left
-            elem->setParent(p);
-            p->setLeftChild(elem); //setting elem to be the child of its parent
+    bool insertNonRoot(Node<T> *elem, Node<T> *parent) {
+        if (elem->getData()->getValue() <=
+            parent->getData()->getValue()) { //if element's value is less than parent's value, insert left
+            parent->setLeftChild(elem); //setting elem to be the child of its parent
             return true; //inserted left child
-        } else if (elem->getData()->getValue() > p->getData()->getValue()) { //if element's value is greater, insert right
-            p->setRightChild(elem); //setting elem to be the child of its parent
+        } else if (elem->getData()->getValue() >
+                   parent->getData()->getValue()) { //if element's value is greater, insert right
+            parent->setRightChild(elem); //setting elem to be the child of its parent
             return true; //inserted right child
         }
-            return false; //insertion failed
+        return false; //insertion failed
 
     }
 
-    Node<T> *findParent(Node<T> *elem) {
+    Node<T> *findParent(Node<T> *elem) { //could make recursive?
         Node<T> *curr = root;
-        int val = elem->getData()->getValue();
         int ctr = 0;
-        //if less than root, recursively insert at left child
-        //if greater than root, recursively insert at right child
-        //if these children are empty, insert there
         while (ctr < numberOfElements) { //prevents an infinite loop for now
-            if (val <= curr->getData()->getValue()) { //if less than parent, go to the left
+            if (elem->getData()->getValue() <=
+                curr->getData()->getValue()) { //if value of new element is less than or = to parent, go to the left
                 if (curr->getLeftChild() == nullptr)
                     return curr;
                 else
                     curr = curr->getLeftChild();
-            } else if (val > curr->getData()->getValue()) { //if greater than parent, go to the right
+            } else if (elem->getData()->getValue() >
+                       curr->getData()->getValue()) { //if greater than parent, go to the right
                 if (curr->getRightChild() == nullptr)
                     return curr;
                 else
@@ -148,51 +130,101 @@ public:
     }
 
     void print() {
-        for (int i = 0; i < numberOfElements; i++) {
-            cout << findKthElement(i) << endl;
+        printRecursive(root); //has to go to another method because main shouldn't need the root to call print
+        cout << endl;
+    }
+
+    void printRecursive(Node<T> *curr) {
+        if (curr == nullptr)
+            return; //base case, if there isn't anything there don't bother trying to print
+        else {
+            curr->print(); //print root
+            cout << " ";
+            printRecursive(curr->getLeftChild()); //print left subtree
+            printRecursive(curr->getRightChild()); //print right subtree
         }
     }
 
-    Node<T> *findSmallest() {
-        cout << "find smallest" << endl;
-        return nullptr;
+    void findSmallest() {
+        cout << "smallest number is: ";
+        sortedList.clear(); //clears list to make room for the new elements - could change the way sorting works to eliminate this step
+        sortRecursive(root, true); //sorting list in ascending order
+        sortedList.front()->print(); //prints top item (smallest since ascending)
+        cout << endl;
     }
 
-    Node<T> *findBiggest() {
-        cout << "find biggest" << endl;
-        return nullptr;
+    void findBiggest() {
+        cout << "biggest number is: ";
+        sortedList.clear(); //clears list
+        sortRecursive(root, false); //sorting list in descending order
+        sortedList.front()->print(); //prints top item (largest since descending)
+        cout << endl;
     }
 
     bool deleteElement(T *data) {
-        cout << "delete element" << endl;
-        return 0;
+        cout << "delete element" << endl; //best method here
+        return false;
     }
 
-    Node<T> *findKthElement(int k) {
-        cout << "find kth element" << endl;
-        return nullptr;
+    void findKthElement(int k) {
+        if (k >= numberOfElements) { //trying to print an element at an index that doesn't exist/out of bounds
+            cout << "Number does NOT exist" << endl;
+            return;
+        }
+        cout << k << "th element is: ";
+        sortedList.clear(); //clears list to make room for new elements
+        sortRecursive(root, true); //sorting list in ascending order
+        sortedList.at(k)->print(); //prints kth element
+        cout << endl;
+
     }
 
     int getnumberOfElements() { return this->numberOfElements; }
 
     void sortAscending() {
+        //clears the list to store elements in
+        sortedList.clear();
+        //traverse tree in-order to sort elements and stores it in a sorted list (deque)
+        sortRecursive(root, true);
+        //prints elements
+        printList();
+    }
 
-        cout << "sort ascending" << endl;
+    void sortRecursive(Node<T> *curr, bool inc) {
+        if (curr == nullptr) //base case
+            return;
+        else {
+            sortRecursive(curr->getLeftChild(), inc); //traversing left subtree
+            if (inc) //if increasing, lowest value should be at the first position (front) so higher values should be pushed back
+                sortedList.push_back(curr);
+            else { //vice versa
+                sortedList.push_front(curr);
+            }
+            sortRecursive(curr->getRightChild(), inc); //traversing right subtree
+        }
     }
 
     void sortDescending() {
-        cout << "sort ascending" << endl;
+        sortRecursive(root,false); //still sorting recursively, but the false bool means that the list will be backwards
+        printList();
     }
 
-    Node<T> *getRoot() { return root; }
+    void printList() {
+        sortedList.front()->getData()->print(); //prints first element without comma
+        for (int i = 1; i < numberOfElements; i++) {
+            cout << ", ";
+            sortedList.at(i)->getData()->print();
+        }
+        cout << endl;
+    }
+
 };
 
 int main() {
-    int a[] = {10,45,23,67,89,34,12,99};
-    Data* newData = new Data(a[0]);
-    BinarySearchTree<Data>* newBST = new BinarySearchTree<Data>(newData);
-    for(int i=1;i< (sizeof(a)/sizeof(int));i++)
-    {
+    int a[] = {10, 45, 23, 67, 89, 34, 12, 99};
+    Data *newData = new Data(a[0]);
+    BinarySearchTree<Data> *newBST = new BinarySearchTree<Data>(newData);
+    for (int i = 1; i < (sizeof(a) / sizeof(int)); i++) {
         newData = new Data(a[i]);
         newBST->insertElement(newData);
     }
@@ -209,7 +241,7 @@ int main() {
     newBST->deleteElement(newData); //delete with one child
     newBST->print();
     newData = new Data(10);
-    newBST->deleteElement(newData); // delete a number that doesnt exist. What will you print?
+    newBST->deleteElement(newData); // delete a number that doesn't exist. What will you print?
     newBST->print();
     newBST->findKthElement(1); //first element
     newBST->findKthElement(newBST->getnumberOfElements()); //last element
