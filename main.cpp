@@ -7,14 +7,13 @@ class Data {
 private:
     int value;
 public:
-    Data(){
-        value = -1;
-    }
     Data(int x) {
-        value = x;
+        this->value = x;
     }
 
-    int getValue() { return value; }
+    int getValue() {
+        return value;
+    }
 
     void setValue(int val) { value = val; }
 
@@ -29,15 +28,39 @@ private:
     Node<T> *rightChild;
     Node<T> *parent;
 public:
-    Node(T *data) {
+    explicit Node(T *data) {
         this->data = data;
+        this->leftChild = nullptr;
+        this->rightChild = nullptr;
+        this->parent = nullptr;
     }
 
-    void print() {
-        data->print();
+    void print() { //this works, not sure how so don't touch it for now
+        cout << "This node has data ";
+        if (getData() == nullptr)
+            cout << "none ";
+        else
+            cout << data->getValue() << " and ";
+        if (getLeftChild() == nullptr)
+            cout << " no left child ";
+        else
+            cout << "left child " << getLeftChild()->getData()->getValue();
+        cout << " and ";
+        if (getRightChild() == nullptr)
+            cout << " no right child";
+        else
+            cout << "right child " << getRightChild()->getData()->getValue();
+        cout << " with parent ";
+        if (getParent() == nullptr)
+            cout << " none";
+        else
+            cout << getParent()->getData()->getValue();
+        cout << endl;
     }
 
-    T *getData() { return data; }
+    T *getData() {
+        return data;
+    }
 
     Node<T> *getLeftChild() { return leftChild; }
 
@@ -60,74 +83,68 @@ private:
     int height;
 public:
     BinarySearchTree(T *r) {
-        root = new Node<T>(r);
-        root->setLeftChild(nullptr);
-        root->setRightChild(nullptr);
-        root->setParent(nullptr);
         height = 0;
         numberOfElements = 1;
+        root = new Node<T>(r);
     }
 
     ~BinarySearchTree() {
-        //while(root!=nullptr)
+        while (numberOfElements > 0)
+            deleteElement(root);
 
     }
 
     //write setters and getters
     //elem should be a Data element, in this case (whatever the Node Class is using as its datatype)
-    bool insertElement(T *elem) {
+    void insertElement(T *d) {
+        Node<T> *elem = new Node<T>(d);
+        if (numberOfElements == 0)
+            root = elem;
+        else{
+            elem->setParent(findParent(elem));
+            insertNonRoot(elem);
+        }
+        numberOfElements++;
+        elem->print();
+    }
+
+    bool insertNonRoot(Node<T> *elem) {
+
+        Node<T> *p = elem->getParent(); //shortcut to avoid long -> trails
+        if (elem->getData()->getValue() <= p->getData()->getValue()) { //if element's value is less than parent's value, insert left
+            elem->setParent(p);
+            p->setLeftChild(elem); //setting elem to be the child of its parent
+            return true; //inserted left child
+        } else if (elem->getData()->getValue() > p->getData()->getValue()) { //if element's value is greater, insert right
+            p->setRightChild(elem); //setting elem to be the child of its parent
+            return true; //inserted right child
+        }
+            return false; //insertion failed
+
+    }
+
+    Node<T> *findParent(Node<T> *elem) {
+        Node<T> *curr = root;
+        int val = elem->getData()->getValue();
+        int ctr = 0;
         //if less than root, recursively insert at left child
         //if greater than root, recursively insert at right child
         //if these children are empty, insert there
-        Node<T> *r = findParent(elem);
-        numberOfElements++;
-        return 1;
-    }
-
-    Node<T> *findParent(T *obj) {
-        Node<T> *p;
-        Node<T> *chld;
-        chld = new Node<T>(obj);
-        if (chld->getData()->getValue() <= root->getData()->getValue()) {
-            if (root->getLeftChild()==nullptr)
-                root->setLeftChild(chld);
-            else
-            p = root->getLeftChild();
-        }
-        else {
-            if (root->getRightChild()==nullptr)
-                root->setRightChild(chld);
-            else
-            p = root->getRightChild();
-        }
-        root->getLeftChild()->print();
-        root->getRightChild()->print();
-        cout << "entering loop" << endl;
-        return p;
-        while (true) {
-            cout<<chld->getData()->getValue() << endl;
-            cout << p << endl;
-            if (chld->getData()->getValue() <= p->getData()->getValue()) {
-                try {
-                    cout << "Less";
-                    p = p->getLeftChild();
-                }
-                catch (exception &e) {
-                    break;
-                }
-            } else if (chld->getData()->getValue() > p->getData()->getValue()) {
-                try {
-                    cout << "More";
-                    p = p->getRightChild();
-                }
-                catch (exception &e) {
-                    break;
-                }
+        while (ctr < numberOfElements) { //prevents an infinite loop for now
+            if (val <= curr->getData()->getValue()) { //if less than parent, go to the left
+                if (curr->getLeftChild() == nullptr)
+                    return curr;
+                else
+                    curr = curr->getLeftChild();
+            } else if (val > curr->getData()->getValue()) { //if greater than parent, go to the right
+                if (curr->getRightChild() == nullptr)
+                    return curr;
+                else
+                    curr = curr->getRightChild();
             }
-            cout << "??";
-            cout << p->getData();
+            ctr++;
         }
-        return p;
+        return root;
     }
 
     void print() {
@@ -166,13 +183,16 @@ public:
     void sortDescending() {
         cout << "sort ascending" << endl;
     }
+
+    Node<T> *getRoot() { return root; }
 };
 
 int main() {
-    int a[] = {10, 45, 23, 67, 89, 34, 12, 99};
-    Data *newData = new Data(a[0]);
-    BinarySearchTree<Data> *newBST = new BinarySearchTree<Data>(newData);
-    for (int i = 1; i < (sizeof(a) / sizeof(int)); i++) {
+    int a[] = {10,45,23,67,89,34,12,99};
+    Data* newData = new Data(a[0]);
+    BinarySearchTree<Data>* newBST = new BinarySearchTree<Data>(newData);
+    for(int i=1;i< (sizeof(a)/sizeof(int));i++)
+    {
         newData = new Data(a[i]);
         newBST->insertElement(newData);
     }
@@ -189,7 +209,7 @@ int main() {
     newBST->deleteElement(newData); //delete with one child
     newBST->print();
     newData = new Data(10);
-    newBST->deleteElement(newData); // delete a number that doesn't exist. What will you print?
+    newBST->deleteElement(newData); // delete a number that doesnt exist. What will you print?
     newBST->print();
     newBST->findKthElement(1); //first element
     newBST->findKthElement(newBST->getnumberOfElements()); //last element
@@ -199,7 +219,5 @@ int main() {
     newBST->findBiggest();
     newBST->sortAscending();
     newBST->sortDescending();
-
     return 0;
 }
-
